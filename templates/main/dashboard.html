@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ settings.get('sitename', 'QR Manager') }} — Мои QR-коды</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <script src="{{ url_for('static', filename='js/toasts.js') }}"></script>
+</head>
+<body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+    <script>showToast({{ message|tojson }}, {{ category|tojson }});</script>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<nav class="navbar navbar-user navbar-expand-lg">
+    <div class="container">
+        <a class="navbar-brand text-white" href="{{ url_for('main.dashboard') }}">
+            <i class="bi bi-qr-code me-2"></i>{{ settings.get('sitename', 'QR Manager') }}
+        </a>
+        <div class="d-flex align-items-center gap-2">
+            <span class="text-white-50 small me-2 d-none d-sm-inline">
+                <i class="bi bi-person-circle me-1"></i>{{ name }}
+            </span>
+            {% if current_user.role in ('admin', 'moderator') %}
+                <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-light btn-sm px-3 me-1">
+                    <i class="bi bi-shield-lock me-1"></i>Управление
+                </a>
+            {% endif %}
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline-light btn-sm px-3">
+                <i class="bi bi-box-arrow-right me-1"></i>Выйти
+            </a>
+        </div>
+    </div>
+</nav>
+
+{% macro render_qr_card(qr) %}
+<div class="qr-card">
+    <div class="qr-image">
+        <img src="data:image/png;base64,{{ qr.image_b64 }}" alt="QR-код {{ qr.name }}">
+    </div>
+    <div class="qr-name">{{ qr.name }}</div>
+    <div class="qr-link">
+        <i class="bi bi-link-45deg me-1"></i>
+        <a href="{{ qr.link }}" target="_blank">{{ qr.link|truncate(40) }}</a>
+    </div>
+    <div class="qr-categories">
+        {% for cat in qr.categories %}
+            <span class="cat-tag"><i class="bi bi-tag me-1"></i>{{ cat }}</span>
+        {% else %}
+            <span class="text-muted small">Без категорий</span>
+        {% endfor %}
+    </div>
+    <div class="qr-actions">
+        <a href="data:image/png;base64,{{ qr.image_b64 }}" download="qr_{{ qr.name }}.png" class="btn btn-outline-secondary btn-sm flex-grow-1">
+            <i class="bi bi-download me-1"></i>Скачать
+        </a>
+        <button class="btn btn-outline-primary btn-sm" onclick="navigator.clipboard.writeText('{{ qr.link }}')">
+            <i class="bi bi-clipboard"></i>
+        </button>
+    </div>
+</div>
+{% endmacro %}
+
+<main class="container-fluid my-4 px-4">
+        <div class="row align-items-center mb-4 g-3">
+            <div class="col-12 col-md-6">
+                <h4 class="mb-0 fw-bold text-dark">Мои QR-коды</h4>
+                <p class="text-muted small mb-0">Всего: {{ qrcodes|length }}</p>
+            </div>
+            <div class="col-12 col-md-6">
+                {% if qrcodes %}
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="qrSearchInput" class="form-control border-start-0" placeholder="Поиск в выбранной категории...">
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% if qrcodes %}
+        <ul class="nav nav-pills nav-pills-custom gap-2 m-4" id="categoryTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="all-tab" data-bs-toggle="pill" data-bs-target="#pane-all" type="button" role="tab">Все</button>
+            </li>
+
+            {% set unique_cats = [] %}
+            {% for qr in qrcodes %}
+                {% for cat in qr.categories %}
+                    {% if cat not in unique_cats %}
+                        {% if unique_cats.append(cat) %}{% endif %}
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+
+            {% set has_uncategorized = false %}
+            {% for qr in qrcodes %}
+                {% if not qr.categories %}
+                    {% set has_uncategorized = true %}
+                {% endif %}
+            {% endfor %}
+
+            {% for cat in unique_cats|sort %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-{{ loop.index }}" data-bs-toggle="pill" data-bs-target="#pane-{{ loop.index }}" type="button" role="tab">{{ cat }}</button>
+                </li>
+            {% endfor %}
+
+            {% if has_uncategorized %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="tab-none" data-bs-toggle="pill" data-bs-target="#pane-none" type="button" role="tab">Без категорий</button>
+                </li>
+            {% endif %}
+        </ul>
+
+        <div class="tab-content" id="categoryTabsContent">
+            <div class="tab-pane fade show active" id="pane-all" role="tabpanel">
+                <div class="qr-grid">
+                    {% for qr in qrcodes %}
+                        {{ render_qr_card(qr) }}
+                    {% endfor %}
+                </div>
+                <div class="empty-state d-none no-results-placeholder">
+                    <div class="empty-icon"><i class="bi bi-search-heart"></i></div>
+                    <h4>Ничего не найдено</h4>
+                    <p class="text-muted">Попробуйте изменить поисковый запрос</p>
+                </div>
+            </div>
+
+            {% for cat in unique_cats|sort %}
+                {% set outer_loop = loop %}
+                <div class="tab-pane fade" id="pane-{{ outer_loop.index }}" role="tabpanel">
+                    <div class="qr-grid">
+                        {% for qr in qrcodes %}
+                            {% if cat in qr.categories %}
+                                {{ render_qr_card(qr) }}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="empty-state d-none no-results-placeholder">
+                        <div class="empty-icon"><i class="bi bi-search-heart"></i></div>
+                        <h4>Ничего не найдено</h4>
+                        <p class="text-muted">В этой категории нет подходящих результатов</p>
+                    </div>
+                </div>
+            {% endfor %}
+
+            {% if has_uncategorized %}
+                <div class="tab-pane fade" id="pane-none" role="tabpanel">
+                    <div class="qr-grid">
+                        {% for qr in qrcodes %}
+                            {% if not qr.categories %}
+                                {{ render_qr_card(qr) }}
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="empty-state d-none no-results-placeholder">
+                        <div class="empty-icon"><i class="bi bi-search-heart"></i></div>
+                        <h4>Ничего не найдено</h4>
+                        <p class="text-muted">Нет подходящих результатов без категорий</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-icon"><i class="bi bi-qr-code"></i></div>
+            <h4>У вас пока нет QR-кодов</h4>
+            <p class="mb-3">Обратитесь к администратору для создания динамического QR-кода</p>
+            {% if current_user.role in ('admin', 'moderator') %}
+                <a href="{{ url_for('admin.generate_qr') }}" class="btn btn-primary rounded-4 px-4">
+                    <i class="bi bi-plus-lg me-2"></i>Создать первый QR-код
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% include 'partials/footer.html' %}
+</body>
+</html>

@@ -1,0 +1,21 @@
+<form action="{{ url_for('admin.create_category') }}" method="POST">
+    {{ form.hidden_tag() }}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+        <script>showToast({{ message|tojson }}, {{ category|tojson }});</script>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <div class="mb-4">
+        <label for="name" class="form-label">Название категории</label>
+        <input type="text" class="form-control" id="name" name="name"
+               placeholder="Например: Важное, Проекты, Архив" required>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn flex-grow-1 btn-blue">
+            <i class="bi bi-plus-lg me-2"></i>Добавить
+        </button>
+        <button type="button" class="btn btn-outline-secondary-custom px-4" data-bs-dismiss="modal">Отмена</button>
+    </div>
+</form>

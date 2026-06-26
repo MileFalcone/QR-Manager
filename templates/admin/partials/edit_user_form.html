@@ -1,0 +1,98 @@
+<form action="{{ url_for('admin.edit_user', user_id=user.id) }}" method="POST">
+    {{ form.hidden_tag() }}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+        <script>showToast({{ message|tojson }}, {{ category|tojson }});</script>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <div class="text-center mb-4">
+        <div class="user-avatar">{{ user.username[0].upper() }}</div>
+        <span class="role-badge {{ user.role }}">
+            <i class="bi {{ 'bi-shield-fill-check' if user.role == 'admin' else 'bi-person-gear' if user.role == 'moderator' else 'bi-person' }} me-1"></i>
+            {{ 'Администратор' if user.role == 'admin' else 'Модератор' if user.role == 'moderator' else 'Пользователь' }}
+        </span>
+        <div class="text-muted small mt-1">ID: #{{ user.id }}</div>
+    </div>
+
+    <div class="mb-3">
+        <label for="username" class="form-label">Имя пользователя</label>
+        <input type="text" class="form-control" id="username" name="username"
+               value="{{ user.username }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">
+            Новый пароль
+            <small class="text-muted fw-normal">(оставьте пустым, чтобы не менять)</small>
+        </label>
+        <input type="password" class="form-control" id="password" name="password"
+               placeholder="Введите новый пароль...">
+    </div>
+
+    <div class="mb-3">
+        <div class="label">Категории</div>
+        <div class="mb-3 position-relative">
+            <input type="hidden" id="category_ids" name="category_ids"
+                value="{{ user.categories|map(attribute='id')|join(',') if user.categories else '' }}">
+
+            <button class="dropdown-toggle-custom" type="button" id="categoryDropdown"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                <span id="selected-categories-label" class="text-muted">Выберите категории...</span>
+            </button>
+
+            <div class="dropdown-menu category-search-menu" aria-labelledby="categoryDropdown" id="categoryMenu">
+                <div class="input-group mb-2">
+                    <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control" id="categorySearch"
+                        placeholder="Поиск категории..." autocomplete="off">
+                </div>
+                <div id="categoriesList">
+                    {% for category in categories %}
+                        <div class="dropdown-item category-option" data-id="{{ category.id }}">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input category-checkbox"
+                                    id="cat_{{ category.id }}" value="{{ category.id }}"
+                                    {% if category.id in user.categories|map(attribute='id') %}checked{% endif %}>
+                                <label class="form-check-label" for="cat_{{ category.id }}">
+                                    {{ category.name }}
+                                    {% if category.user_codes|length > 0 %}
+                                        <span class="badge-preview ms-1">{{ category.user_codes|length }}</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-muted text-center py-2 small">Нет категорий</div>
+                    {% endfor %}
+                    <div class="no-results text-center d-none" id="noCategoryResults">
+                        <i class="bi bi-tag-x me-1"></i>Категория не найдена
+                    </div>
+                </div>
+                <div class="dropdown-divider"></div>
+                <button type="button" class="dropdown-item text-primary" id="clearCategories">
+                    <i class="bi bi-x-circle me-1"></i>Очистить выбранные
+                </button>
+            </div>
+
+            <div id="selected-categories-tags" class="mt-2"></div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <label for="role" class="form-label">Роль</label>
+        <select class="form-select" id="role" name="role">
+            <option value="user" {{ 'selected' if user.role == 'user' else '' }}>Пользователь</option>
+            <option value="moderator" {{ 'selected' if user.role == 'moderator' else '' }}>Модератор</option>
+            <option value="admin" {{ 'selected' if user.role == 'admin' else '' }}>Администратор</option>
+        </select>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn flex-grow-1 btn-orange">
+            <i class="bi bi-save me-2"></i>Сохранить
+        </button>
+        <button type="button" class="btn btn-outline-secondary-custom px-4" data-bs-dismiss="modal">Отмена</button>
+    </div>
+</form>

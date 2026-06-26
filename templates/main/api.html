@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ settings.get('sitename', 'QR Manager') }} — API Documentation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/api.css') }}">
+    <script src="{{ url_for('static', filename='js/toasts.js') }}"></script>
+</head>
+<body>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+    <script>showToast({{ message|tojson }}, {{ category|tojson }});</script>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="api-card">
+    <div class="api-header">
+        <div class="api-icon">
+            <i class="bi bi-code-slash"></i>
+        </div>
+        <div class="api-header-text">
+            <h1>API Documentation</h1>
+            <p>{{ settings.get('sitename', 'QR Manager') }} — программный интерфейс</p>
+        </div>
+    </div>
+
+    <!-- Public -->
+    <div class="endpoint-group">
+        <div class="section-title">
+            <i class="bi bi-globe"></i>
+            Public Endpoints
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-url">/</span>
+                <span class="auth-badge auth-public">Public</span>
+            </div>
+            <div class="endpoint-desc">
+                Главная страница. Перенаправляет аутентифицированных пользователей на <span class="detail-code">/dashboard</span>.
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-url">/login</span>
+                <span class="auth-badge auth-public">Public</span>
+            </div>
+            <div class="endpoint-desc">
+                Страница входа. Аутентифицированные пользователи перенаправляются на <span class="detail-code">/dashboard</span>.
+            </div>
+            <div class="endpoint-details">
+                <div class="detail-row">
+                    <span class="detail-label">POST body:</span>
+                    <span class="detail-value"><span class="detail-code">username</span> — имя пользователя</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label"></span>
+                    <span class="detail-value"><span class="detail-code">password</span> — пароль</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label"></span>
+                    <span class="detail-value"><span class="detail-code">captcha_answer</span> — ответ капчи (если включена)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-url">/r/&lt;key&gt;</span>
+                <span class="auth-badge auth-public">Public</span>
+            </div>
+            <div class="endpoint-desc">
+                Перенаправление на целевой URL, сохранённый в QR-коде. <span class="detail-code">key</span> — уникальный идентификатор QR-кода.
+            </div>
+            <div class="endpoint-details">
+                <div class="detail-row">
+                    <span class="detail-label">Errors:</span>
+                    <span class="detail-value"><span class="detail-code">404</span> — ключ не найден</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label"></span>
+                    <span class="detail-value"><span class="detail-code">400</span> — невалидный URL в QR-коде</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User -->
+    <div class="endpoint-group">
+        <div class="section-title">
+            <i class="bi bi-person"></i>
+            User Endpoints
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-url">/dashboard</span>
+                <span class="auth-badge auth-required">Auth</span>
+            </div>
+            <div class="endpoint-desc">
+                Панель управления пользователя. Отображает QR-коды, назначенные текущему пользователю.
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-url">/logout</span>
+                <span class="auth-badge auth-required">Auth</span>
+            </div>
+            <div class="endpoint-desc">
+                Выход из системы. Перенаправляет на <span class="detail-code">/login</span>.
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin -->
+    <div class="endpoint-group">
+        <div class="section-title">
+            <i class="bi bi-shield-lock"></i>
+            Admin Endpoints
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-url">/admin/dashboard</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Панель управления администратора. Доступно администраторам и модераторам.
+            </div>
+        </div>
+
+        <!-- Users CRUD -->
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-url">/admin/create_user</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Создание нового пользователя. GET — форма, POST — создание.
+            </div>
+            <div class="endpoint-details">
+                <div class="detail-row">
+                    <span class="detail-label">POST body:</span>
+                    <span class="detail-value"><span class="detail-code">username</span>, <span class="detail-code">password</span>, <span class="detail-code">role</span>, <span class="detail-code">category_ids</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-url">/admin/edit_user/&lt;id&gt;</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Редактирование пользователя. GET — форма, POST — сохранение.
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-url">/admin/delete_user/&lt;id&gt;</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Удаление пользователя.
+            </div>
+        </div>
+
+        <!-- Categories CRUD -->
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-url">/admin/create_category</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Создание категории. GET — форма, POST — создание.
+            </div>
+            <div class="endpoint-details">
+                <div class="detail-row">
+                    <span class="detail-label">POST body:</span>
+                    <span class="detail-value"><span class="detail-code">name</span> — название категории</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-url">/admin/edit_category/&lt;id&gt;</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Редактирование категории. GET — форма, POST — сохранение.
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-url">/admin/delete_category/&lt;id&gt;</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Удаление категории.
+            </div>
+        </div>
+
+        <!-- QR CRUD -->
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-url">/admin/generate_qr</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Создание нового QR-кода. GET — форма, POST — генерация.
+            </div>
+            <div class="endpoint-details">
+                <div class="detail-row">
+                    <span class="detail-label">POST body:</span>
+                    <span class="detail-value"><span class="detail-code">name</span>, <span class="detail-code">link</span>, <span class="detail-code">user_id</span>, <span class="detail-code">category_ids</span>, <span class="detail-code">fill_color</span>, <span class="detail-code">back_color</span>, <span class="detail-code">scale</span>, <span class="detail-code">logo_image</span> (file)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-url">/admin/edit_qr/&lt;id&gt;</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Редактирование QR-кода. GET — форма, POST — сохранение.
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-url">/admin/download_qr/&lt;id&gt;</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Скачивание PNG-изображения QR-кода.
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-url">/admin/delete_qr/&lt;id&gt;</span>
+                <span class="auth-badge auth-admin">Admin</span>
+            </div>
+            <div class="endpoint-desc">
+                Удаление QR-кода.
+            </div>
+        </div>
+
+        <!-- Site Settings -->
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">GET</span>
+                <span class="endpoint-method method-post">POST</span>
+                <span class="endpoint-url">/admin/site_settings</span>
+                <span class="auth-badge auth-admin">Superadmin</span>
+            </div>
+            <div class="endpoint-desc">
+                Настройки сайта (sitename, version). Доступно только администраторам (superadmin).
+                GET — форма, POST — сохранение.
+            </div>
+        </div>
+    </div>
+
+    <!-- Errors -->
+    <div class="endpoint-group">
+        <div class="section-title">
+            <i class="bi bi-exclamation-triangle"></i>
+            Error Responses
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">*</span>
+                <span class="endpoint-url">403 Forbidden</span>
+            </div>
+            <div class="endpoint-desc">
+                Доступ запрещён. Страница <span class="detail-code">/error/403</span>.
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">*</span>
+                <span class="endpoint-url">404 Not Found</span>
+            </div>
+            <div class="endpoint-desc">
+                Страница не найдена. Страница <span class="detail-code">/error/404</span>.
+            </div>
+        </div>
+
+        <div class="endpoint">
+            <div class="endpoint-row">
+                <span class="endpoint-method method-get">*</span>
+                <span class="endpoint-url">500 Internal Server Error</span>
+            </div>
+            <div class="endpoint-desc">
+                Внутренняя ошибка сервера. Страница <span class="detail-code">/error/500</span>.
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="api-footer">
+        <div class="nav-links">
+            <a href="{{ url_for('main.index') }}" class="btn-back">
+                <i class="bi bi-house"></i>
+                На главную
+            </a>
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('admin.dashboard') }}" class="btn-back">
+                <i class="bi bi-speedometer2"></i>
+                Панель управления
+            </a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn-login-nav">
+                <i class="bi bi-box-arrow-in-right"></i>
+                Войти в систему
+            </a>
+            {% endif %}
+            <a href="https://github.com/anomalyco/QR-Gen" target="_blank" class="btn-back">
+                <i class="bi bi-github"></i>
+                GitHub
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<div class="toast-container" id="toastContainer"></div>
+</body>
+</html>

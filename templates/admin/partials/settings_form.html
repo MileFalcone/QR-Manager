@@ -1,0 +1,26 @@
+<form action="{{ url_for('admin.site_settings') }}" method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+        <script>showToast({{ message|tojson }}, {{ category|tojson }});</script>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <div class="mb-3">
+        <label for="sitename" class="form-label">Название сайта</label>
+        <input type="text" class="form-control" id="sitename" name="sitename"
+               value="{{ sitename }}" required>
+    </div>
+    <div class="mb-4">
+        <label for="version" class="form-label">Версия</label>
+        <input type="text" class="form-control" id="version" name="version"
+               value="{{ version }}" required placeholder="Например: v2.0">
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn flex-grow-1 btn-blue">
+            <i class="bi bi-check-lg me-2"></i>Сохранить
+        </button>
+        <button type="button" class="btn btn-outline-secondary-custom px-4" data-bs-dismiss="modal">Отмена</button>
+    </div>
+</form>

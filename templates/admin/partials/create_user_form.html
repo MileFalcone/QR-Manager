@@ -1,0 +1,77 @@
+<form action="{{ url_for('admin.create_user') }}" method="POST">
+    {{ form.hidden_tag() }}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+        <script>showToast({{ message|tojson }}, {{ category|tojson }});</script>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <div class="mb-3">
+        <label for="username" class="form-label">Имя пользователя</label>
+        <input type="text" class="form-control" id="username" name="username" placeholder="ivan_ivanov" required>
+    </div>
+    <div class="mb-3">
+        <label for="password" class="form-label">Пароль</label>
+        <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required>
+    </div>
+    <div class="mb-3 position-relative">
+        <label class="form-label fw-bold">Категории</label>
+        <input type="hidden" id="category_ids" name="category_ids" value="{{ form.category_ids.data|join(',') if form.category_ids.data else '' }}">
+
+        <button class="dropdown-toggle-custom" type="button" id="categoryDropdown"
+                data-bs-toggle="dropdown" aria-expanded="false">
+            <span id="selected-categories-label" class="text-muted">Выберите категории...</span>
+        </button>
+
+        <div class="dropdown-menu category-search-menu" aria-labelledby="categoryDropdown" id="categoryMenu">
+            <div class="input-group mb-2">
+                <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control" id="categorySearch"
+                    placeholder="Поиск категории..." autocomplete="off">
+            </div>
+            <div id="categoriesList">
+                {% for category in categories %}
+                    <div class="dropdown-item category-option" data-id="{{ category.id }}">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input category-checkbox"
+                                id="cat_{{ category.id }}" value="{{ category.id }}"
+                                {% if form.category_ids.data and category.id|string in form.category_ids.data|map('string') %}checked{% endif %}>
+                            <label class="form-check-label" for="cat_{{ category.id }}">
+                                {{ category.name }}
+                                {% if category.qr_codes|length > 0 %}
+                                    <span class="badge-preview ms-1">{{ category.qr_codes|length }}</span>
+                                {% endif %}
+                            </label>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-muted text-center py-2 small">Нет категорий</div>
+                {% endfor %}
+                <div class="no-results text-center d-none" id="noCategoryResults">
+                    <i class="bi bi-tag-x me-1"></i>Категория не найдена
+                </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <button type="button" class="dropdown-item text-primary" id="clearCategories">
+                <i class="bi bi-x-circle me-1"></i>Очистить выбранные
+            </button>
+        </div>
+
+        <div id="selected-categories-tags" class="mt-2"></div>
+    </div>
+    <div class="mb-4">
+        <label for="role" class="form-label">Роль</label>
+        <select class="form-select" id="role" name="role">
+            <option value="user">Пользователь</option>
+            <option value="moderator">Модератор</option>
+            <option value="admin">Администратор</option>
+        </select>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn flex-grow-1 btn-red">
+            <i class="bi bi-check2 me-2"></i>Создать
+        </button>
+        <button type="button" class="btn btn-outline-secondary-custom px-4" data-bs-dismiss="modal">Отмена</button>
+    </div>
+</form>
